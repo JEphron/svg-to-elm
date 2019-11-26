@@ -113,6 +113,7 @@ type alias Attr =
 
 type SvgAst
     = SvgNode String (List Attr) (List SvgAst)
+    | TextNode String
 
 
 lAngleP =
@@ -193,26 +194,59 @@ svgChildrenP =
         helper : LoopHelper SvgAst
         helper revStmts =
             oneOf
-                [ succeed (\stmt -> Loop (stmt :: revStmts))
-                    |= svgP
-                    |. spaces
+                [ backtrackable
+                    (succeed (\stmt -> Loop (stmt :: revStmts))
+                        |= svgP
+                        |. spaces
+                    )
                 , succeed ()
                     |> Parser.map (\_ -> Done (List.reverse revStmts))
                 ]
     in
-    -- loop [] helper
-    succeed ()
+    loop [] helper
 
 
 svgP : Parser SvgAst
 svgP =
-    succeed SvgNode
-        |. oneOf [ symbol "<", succeed () ]
-        |= attrNameP
-        |. spaces
-        |= attrsP
-        |. symbol ">"
-        |= svgChildrenP
+    succeed identity
+        |. symbol "<"
+        |= oneOf
+            [ Parser.andThen (\x -> problem "bad closing") (symbol "/")
+            , succeed identity
+                |= attrNameP
+                |> Parser.andThen
+                    (\attrName ->
+                        succeed (SvgNode attrName)
+                            |. spaces
+                            |= attrsP
+                            |. spaces
+                            |= oneOf
+                                [ backtrackable (succeed [] |. symbol "/>")
+                                , succeed identity
+                                    |. symbol ">"
+                                    -- TODO: handle comments
+                                    -- TODO: `spaces` doesn't like '\t'
+                                    -- TODO: parse out TextNode
+                                    |. spaces
+                                    |= svgChildrenP
+                                    |. spaces
+                                    |. backtrackable (closingTagP attrName)
+                                ]
+                    )
+            ]
+
+
+textNodeP : Parser SvgAst
+textNodeP =
+    Parser.map TextNode
+        (getChompedString <|
+            succeed ()
+                |. chompWhile (\c -> c /= '>' || c /= '<')
+        )
+
+
+closingTagP attrName =
+    symbol ("</" ++ attrName ++ ">")
 
 
 svgDocumentP : Parser SvgAst
