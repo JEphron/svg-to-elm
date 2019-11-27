@@ -41,7 +41,7 @@ svgP =
                 , childrenP attrName
                 ]
 
-        thingy attrName =
+        attrsAndChildren attrName =
             succeed (SvgNode attrName)
                 |. whitespace
                 |= attrsP
@@ -51,20 +51,17 @@ svgP =
         name =
             succeed identity
                 |= attrNameP
-                |> Parser.andThen thingy
-
-        bub =
-            oneOf
-                [ symbol "/" |> fail "Mismatched closing tag?"
-                , name
-                ]
+                |> Parser.andThen attrsAndChildren
     in
     succeed identity
         |. oneOf [ backtrackable commentP, succeed () ]
         |. spaces
         |. symbol "<"
         |. whitespace
-        |= bub
+        |= oneOf
+            [ symbol "/" |> fail "Mismatched closing tag?"
+            , name
+            ]
 
 
 childrenP : String -> Parser (List SvgAst)
