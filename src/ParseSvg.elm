@@ -21,9 +21,9 @@ convertSvgToElm svg =
 svgDocumentP : Parser SvgAst
 svgDocumentP =
     succeed identity
-        |. whitespace
+        |. whitespaceP
         |. oneOf [ backtrackable declarationP, succeed () ]
-        |. whitespace
+        |. whitespaceP
         |= svgP
 
 
@@ -43,9 +43,9 @@ svgP =
 
         attrsAndChildren attrName =
             succeed (SvgNode attrName)
-                |. whitespace
+                |. whitespaceP
                 |= attrsP
-                |. whitespace
+                |. whitespaceP
                 |= children attrName
 
         name =
@@ -57,7 +57,7 @@ svgP =
         |. oneOf [ backtrackable commentP, succeed () ]
         |. spaces
         |. symbol "<"
-        |. whitespace
+        |. whitespaceP
         |= oneOf
             [ symbol "/" |> fail "Mismatched closing tag?"
             , name
@@ -68,15 +68,15 @@ childrenP : String -> Parser (List SvgAst)
 childrenP attrName =
     succeed (++)
         |. symbol ">"
-        |. whitespace
+        |. whitespaceP
         |. oneOf [ backtrackable commentP, succeed () ]
-        |. whitespace
+        |. whitespaceP
         |= textChildrenP
-        |. whitespace
+        |. whitespaceP
         |= svgChildrenP
-        |. whitespace
+        |. whitespaceP
         |. oneOf [ backtrackable commentP, succeed () ]
-        |. whitespace
+        |. whitespaceP
         |. backtrackable (closingTagP attrName)
 
 
@@ -128,7 +128,7 @@ attrsP =
             oneOf
                 [ succeed (\stmt -> Loop (stmt :: revStmts))
                     |= attrP
-                    |. whitespace
+                    |. whitespaceP
                 , succeed ()
                     |> Parser.map (\_ -> Done (List.reverse revStmts))
                 ]
@@ -148,7 +148,7 @@ svgChildrenP =
                 [ backtrackable
                     (succeed (appendHelper revStmts)
                         |= svgP
-                        |. whitespace
+                        |. whitespaceP
                         |= oneOf [ textChildrenP, succeed [] ]
                     )
                 , succeed ()
@@ -160,6 +160,7 @@ svgChildrenP =
 
 textChildrenP : Parser (List SvgAst)
 textChildrenP =
+    -- TODO: the way we strip whitespace from the front of TextNodes is weird
     succeed
         (\string ->
             if String.isEmpty string then
@@ -203,6 +204,6 @@ fail why =
     Parser.andThen (always (problem why))
 
 
-whitespace : Parser ()
-whitespace =
+whitespaceP : Parser ()
+whitespaceP =
     chompWhile (\c -> c == ' ' || c == '\n' || c == '\u{000D}' || c == '\t')
