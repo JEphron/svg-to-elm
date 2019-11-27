@@ -6,7 +6,7 @@ import Css exposing (..)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, href, src, value)
 import Html.Styled.Events exposing (onClick, onInput)
-import Parser exposing (..)
+import ParseSvg exposing (convertSvgToElm)
 
 
 type alias Model =
@@ -20,11 +20,8 @@ type Msg
     | ConvertSvgToElm
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( { elmCode = ""
-      , svgCode = """
-                   <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+initSvg =
+    """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="104px" height="36px" viewBox="0 0 104 36" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
     <title>logo-django</title>
     <description>Created with Sketch (http://www.bohemiancoding.com/sketch)</description>
@@ -35,7 +32,13 @@ init _ =
         </g>
     </g>
 </svg>
-                  """
+"""
+
+
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( { elmCode = toElmCode initSvg
+      , svgCode = initSvg
       }
     , Cmd.none
     )
@@ -48,7 +51,7 @@ black =
 textAreaStyle : Style
 textAreaStyle =
     Css.batch
-        [ resize none
+        [ resize vertical
         , width (pct 100)
         , minHeight (px 200)
         , borderRadius (px 5)
@@ -107,177 +110,29 @@ view model =
     }
 
 
-type alias Attr =
-    ( String, String )
+toElmCode content =
+    case convertSvgToElm content of
+        Err deadEnds ->
+            Debug.toString deadEnds
 
-
-type SvgAst
-    = SvgNode String (List Attr) (List SvgAst)
-    | TextNode String
-
-
-lAngleP =
-    symbol "<"
-
-
-rAngleP =
-    symbol ">"
-
-
-inclusiveChompUntil s =
-    chompUntil s |. symbol s
-
-
-declarationP : Parser ()
-declarationP =
-    symbol "<?xml" |. inclusiveChompUntil "?>"
-
-
-attrNameP : Parser String
-attrNameP =
-    let
-        isNameChar c =
-            Char.isAlphaNum c || c == ':' || c == '-' || c == '_'
-    in
-    getChompedString <|
-        succeed ()
-            |. chompWhile isNameChar
-
-
-quoteP =
-    symbol "\""
-
-
-quotedStringP : Parser String
-quotedStringP =
-    let
-        isInnerChar c =
-            c /= '"'
-    in
-    succeed identity
-        |. quoteP
-        |= ((succeed () |. chompWhile isInnerChar) |> getChompedString)
-        |. quoteP
-
-
-attrP : Parser Attr
-attrP =
-    succeed Tuple.pair
-        |= attrNameP
-        |. symbol "="
-        |= quotedStringP
-
-
-type alias LoopHelper a =
-    List a -> Parser (Step (List a) (List a))
-
-
-attrsP : Parser (List Attr)
-attrsP =
-    let
-        helper : LoopHelper Attr
-        helper revStmts =
-            oneOf
-                [ succeed (\stmt -> Loop (stmt :: revStmts))
-                    |= attrP
-                    |. spaces
-                , succeed ()
-                    |> Parser.map (\_ -> Done (List.reverse revStmts))
-                ]
-    in
-    loop [] helper
-
-
-svgChildrenP : Parser (List SvgAst)
-svgChildrenP =
-    let
-        helper : LoopHelper SvgAst
-        helper revStmts =
-            oneOf
-                [ backtrackable
-                    (succeed (\stmt -> Loop (stmt :: revStmts))
-                        |= svgP
-                        |. spaces
-                    )
-                , succeed ()
-                    |> Parser.map (\_ -> Done (List.reverse revStmts))
-                ]
-    in
-    loop [] helper
-
-
-svgP : Parser SvgAst
-svgP =
-    succeed identity
-        |. symbol "<"
-        |= oneOf
-            [ Parser.andThen (\x -> problem "bad closing") (symbol "/")
-            , succeed identity
-                |= attrNameP
-                |> Parser.andThen
-                    (\attrName ->
-                        succeed (SvgNode attrName)
-                            |. spaces
-                            |= attrsP
-                            |. spaces
-                            |= oneOf
-                                [ backtrackable (succeed [] |. symbol "/>")
-                                , succeed identity
-                                    |. symbol ">"
-                                    -- TODO: handle comments
-                                    -- TODO: `spaces` doesn't like '\t'
-                                    -- TODO: parse out TextNode
-                                    |. spaces
-                                    |= svgChildrenP
-                                    |. spaces
-                                    |. backtrackable (closingTagP attrName)
-                                ]
-                    )
-            ]
-
-
-textNodeP : Parser SvgAst
-textNodeP =
-    Parser.map TextNode
-        (getChompedString <|
-            succeed ()
-                |. chompWhile (\c -> c /= '>' || c /= '<')
-        )
-
-
-closingTagP attrName =
-    symbol ("</" ++ attrName ++ ">")
-
-
-svgDocumentP : Parser SvgAst
-svgDocumentP =
-    succeed identity
-        |. spaces
-        |. oneOf [ backtrackable declarationP, succeed () ]
-        |. spaces
-        |= svgP
-
-
-convertSvgToElm : String -> Result (List DeadEnd) SvgAst
-convertSvgToElm svg =
-    run svgDocumentP svg
+        Ok result ->
+            Debug.toString result
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SvgCodeChange content ->
-            ( { model | svgCode = content }, Cmd.none )
+            ( { model
+                | elmCode = toElmCode content
+                , svgCode = content
+              }
+            , Cmd.none
+            )
 
         ConvertSvgToElm ->
             ( { model
-                | elmCode =
-                    case convertSvgToElm model.svgCode of
-                        Err deadEnds ->
-                            Debug.toString deadEnds
-
-                        Ok result ->
-                            Debug.toString result
+                | elmCode = toElmCode model.svgCode
               }
             , Cmd.none
             )
