@@ -1,8 +1,2 @@
-# svg-to-elm
-SVG → Elm
-
-WIIIIP
-
-currently parses SVG to an AST
-
-TODO: convert `SvgAst` to Elm
+# SVG → Elm
+There used to be a tool that did exactly this, but the company that hosted it seems to have been eaten by bears. 
