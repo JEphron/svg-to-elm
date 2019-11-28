@@ -23,6 +23,7 @@ svgDocumentP =
     succeed identity
         |. whitespaceP
         |. oneOf [ backtrackable declarationP, succeed () ]
+        |. oneOf [ backtrackable doctypeP, succeed () ]
         |. whitespaceP
         |= svgP
 
@@ -30,6 +31,11 @@ svgDocumentP =
 declarationP : Parser ()
 declarationP =
     symbol "<?xml" |. inclusiveChompUntil "?>"
+
+
+doctypeP : Parser ()
+doctypeP =
+    symbol "<!DOCTYPE" |. inclusiveChompUntil ">"
 
 
 svgP : Parser SvgAst

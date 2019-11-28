@@ -162,11 +162,17 @@ suite =
         --                 []
         --                 [ TextNode "the fruitis round" ]
         --             )
-        -- TODO:
-        -- , test "ignores <!DOCTYPE..."
         , test "ignores declaration at the beginning" <|
             \_ ->
                 expectSvg """<?xml version="1.0" encoding="utf-8"?><svg>  </svg>"""
+                    (SvgNode "svg"
+                        []
+                        []
+                    )
+        , test "ignores <!DOCTYPE..." <|
+            \_ ->
+                expectSvg """<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg />"""
                     (SvgNode "svg"
                         []
                         []
