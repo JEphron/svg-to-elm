@@ -58,6 +58,7 @@ textAreaStyle =
         , border3 (px 6) solid (hex "#fff")
         , padding (px 15)
         , boxShadow5 (px 0) (px 6) (px 0) (px 0) (rgba 0 0 0 0.4)
+        , marginBottom (px 30)
         ]
 
 
@@ -70,11 +71,12 @@ textAreaWrapperStyle =
         ]
 
 
-inputBox name attrs children =
+inputBox attrs children =
     div [ css [ textAreaWrapperStyle ] ]
-        [ h2 [] [ text name ]
-        , textarea (attrs ++ [ css [ textAreaStyle ] ]) children
-        ]
+        (children
+            ++ [ textarea (attrs ++ [ css [ textAreaStyle ] ]) []
+               ]
+        )
 
 
 justifyContent =
@@ -124,11 +126,13 @@ view model =
     , body =
         List.map toUnstyled
             [ header
+            , githubLink
             , wrapper
                 [ contents
-                    [ inputBox "SVG" [ value model.svgCode, onInput SvgCodeChange ] []
-                    , split [ h1 [] [ text "▼" ] ]
-                    , inputBox "Elm" [ value model.elmCode ] []
+                    [ inputBox [ value model.svgCode, onInput SvgCodeChange ]
+                        [ h2 [] [ text "SVG" ] ]
+                    , inputBox [ value model.elmCode ]
+                        [ h2 [] [ text "Elm" ] ]
                     ]
                 ]
             ]
@@ -154,6 +158,12 @@ header =
                 , i [] [ text "Elm" ]
                 ]
             ]
+        ]
+
+
+githubLink =
+    div []
+        [ img [ src "/resources/github.png" ] []
         ]
 
 
