@@ -19,7 +19,7 @@ expectSvg str expectedAst =
 suite : Test
 suite =
     describe "The SVG parser"
-        [ test "can parse basic shit" <|
+        [ test "simple" <|
             \_ ->
                 expectSvg "<svg/>" (SvgNode "svg" [] [])
         , test "some spaces ok" <|
@@ -154,7 +154,7 @@ suite =
                         []
                     )
 
-        -- TODO
+        -- TODO:
         -- , test "comment surrounded by text" <|
         --     \_ ->
         --         expectSvg "<svg> the fruit<!-- <yolo/> -->is round </svg>"
@@ -162,7 +162,9 @@ suite =
         --                 []
         --                 [ TextNode "the fruitis round" ]
         --             )
-        , test "declaration at the beginning" <|
+        -- TODO:
+        -- , test "ignores <!DOCTYPE..."
+        , test "ignores declaration at the beginning" <|
             \_ ->
                 expectSvg """<?xml version="1.0" encoding="utf-8"?><svg>  </svg>"""
                     (SvgNode "svg"

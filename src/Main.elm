@@ -7,6 +7,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, href, src, value)
 import Html.Styled.Events exposing (onClick, onInput)
 import ParseSvg exposing (convertSvgToElm)
+import SvgToElm exposing (svgToElm)
 
 
 type alias Model =
@@ -116,7 +117,7 @@ toElmCode content =
             Debug.toString deadEnds
 
         Ok result ->
-            Debug.toString result
+            svgToElm result
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
