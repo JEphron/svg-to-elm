@@ -53,16 +53,28 @@ textAreaStyle : Style
 textAreaStyle =
     Css.batch
         [ resize vertical
-        , width (pct 100)
         , minHeight (px 200)
         , borderRadius (px 5)
-        , border3 (px 1) solid black
-        , padding (px 10)
+        , border3 (px 6) solid (hex "#fff")
+        , padding (px 15)
+        , boxShadow5 (px 0) (px 6) (px 0) (px 0) (rgba 0 0 0 0.4)
         ]
 
 
-codeArea attrs children =
-    textarea (attrs ++ [ css [ textAreaStyle ] ]) children
+textAreaWrapperStyle : Style
+textAreaWrapperStyle =
+    Css.batch
+        [ width (pct 100)
+        , displayFlex
+        , flexDirection column
+        ]
+
+
+inputBox name attrs children =
+    div [ css [ textAreaWrapperStyle ] ]
+        [ h2 [] [ text name ]
+        , textarea (attrs ++ [ css [ textAreaStyle ] ]) children
+        ]
 
 
 justifyContent =
@@ -81,6 +93,15 @@ wrapper =
         ]
 
 
+contents =
+    div
+        [ css
+            [ maxWidth (px 800)
+            , width (pct 100)
+            ]
+        ]
+
+
 split els =
     let
         halfLine =
@@ -94,21 +115,46 @@ split els =
                 []
     in
     div [ css [ displayFlex, width (pct 100), margin2 (px 20) (px 20) ] ]
-        ([ halfLine ] ++ els ++ [ halfLine ])
+        [ halfLine ]
 
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "SVG -> Elm"
+    { title = "Convert SVG to Elm"
     , body =
         List.map toUnstyled
-            [ wrapper
-                [ codeArea [ value model.svgCode, onInput SvgCodeChange ] []
-                , split [ button [ onClick ConvertSvgToElm ] [ text "convert" ] ]
-                , codeArea [ value model.elmCode ] []
+            [ header
+            , wrapper
+                [ contents
+                    [ inputBox "SVG" [ value model.svgCode, onInput SvgCodeChange ] []
+                    , split [ h1 [] [ text "▼" ] ]
+                    , inputBox "Elm" [ value model.elmCode ] []
+                    ]
                 ]
             ]
     }
+
+
+header =
+    div [ css [ displayFlex, justifyContent "center", alignItems center, marginTop (px 30) ] ]
+        [ div
+            [ css
+                [ backgroundColor (hex "#1293D8")
+                , width (px 240)
+                , padding2 (px 10) (px 30)
+                , displayFlex
+                , justifyContent "center"
+                , alignItems center
+                , border3 (px 3) solid (hex "#fff")
+                ]
+            ]
+            [ h1 []
+                [ b [] [ text "SVG" ]
+                , text " ➜ "
+                , i [] [ text "Elm" ]
+                ]
+            ]
+        ]
 
 
 toElmCode content =
