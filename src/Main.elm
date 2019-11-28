@@ -4,9 +4,10 @@ import Browser
 import Char
 import Css exposing (..)
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css, href, src, value)
+import Html.Styled.Attributes exposing (css, href, readonly, src, value)
 import Html.Styled.Events exposing (onClick, onInput)
 import ParseSvg exposing (convertSvgToElm)
+import Parser
 import SvgToElm exposing (svgToElm)
 
 
@@ -131,7 +132,7 @@ view model =
                 [ contents
                     [ inputBox [ value model.svgCode, onInput SvgCodeChange ]
                         [ h2 [] [ text "SVG" ] ]
-                    , inputBox [ value model.elmCode ]
+                    , inputBox [ value model.elmCode, readonly True ]
                         [ h2 [] [ text "Elm" ] ]
                     ]
                 ]
@@ -162,18 +163,92 @@ header =
 
 
 githubLink =
-    div []
-        [ img [ src "/resources/github.png" ] []
+    div
+        [ css
+            [ position absolute
+            , top (px 8)
+            , right (px 8)
+            ]
+        ]
+        [ a [ href "https://github.com/JEphron/svg-to-elm" ]
+            [ img
+                [ css [ width (px 30) ]
+                , src "/assets/github.png"
+                ]
+                []
+            ]
         ]
 
 
 toElmCode content =
     case convertSvgToElm content of
         Err deadEnds ->
-            Debug.toString deadEnds
+            "parse error: \n"
+                ++ workingDeadEndsToString deadEnds
 
         Ok result ->
             svgToElm result
+
+
+workingDeadEndsToString : List Parser.DeadEnd -> String
+workingDeadEndsToString deadEnds =
+    List.map deadEndToString deadEnds |> String.join "\n"
+
+
+deadEndToString : Parser.DeadEnd -> String
+deadEndToString deadEnd =
+    problemToString deadEnd.problem
+        ++ " (row: "
+        ++ String.fromInt deadEnd.row
+        ++ ", col: "
+        ++ String.fromInt deadEnd.col
+        ++ ")"
+
+
+problemToString : Parser.Problem -> String
+problemToString problem =
+    case problem of
+        Parser.Expecting string ->
+            "expecting " ++ string
+
+        Parser.ExpectingInt ->
+            "expecting int"
+
+        Parser.ExpectingHex ->
+            "expecting hex"
+
+        Parser.ExpectingOctal ->
+            "expecting octal"
+
+        Parser.ExpectingBinary ->
+            "expecting binary"
+
+        Parser.ExpectingFloat ->
+            "expecting float"
+
+        Parser.ExpectingNumber ->
+            "expecting number"
+
+        Parser.ExpectingVariable ->
+            "expecting variable"
+
+        Parser.ExpectingSymbol string ->
+            "expecting symbol \"" ++ string ++ "\""
+
+        Parser.ExpectingKeyword string ->
+            "expecting keyword \"" ++ string ++ "\""
+
+        Parser.ExpectingEnd ->
+            "unexpected end"
+
+        Parser.UnexpectedChar ->
+            "unexpected char"
+
+        Parser.Problem string ->
+            string
+
+        Parser.BadRepeat ->
+            "bad repeat"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
