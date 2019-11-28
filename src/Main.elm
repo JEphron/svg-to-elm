@@ -166,8 +166,8 @@ githubLink =
     div
         [ css
             [ position absolute
-            , top (px 8)
-            , right (px 8)
+            , top (px 18)
+            , right (px 18)
             ]
         ]
         [ a [ href "https://github.com/JEphron/svg-to-elm" ]
