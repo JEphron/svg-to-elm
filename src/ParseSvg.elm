@@ -23,6 +23,7 @@ svgDocumentP =
     succeed identity
         |. whitespaceP
         |. oneOf [ backtrackable declarationP, succeed () ]
+        |. whitespaceP
         |. oneOf [ backtrackable doctypeP, succeed () ]
         |. whitespaceP
         |= svgP
