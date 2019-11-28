@@ -173,7 +173,7 @@ githubLink =
         [ a [ href "https://github.com/JEphron/svg-to-elm" ]
             [ img
                 [ css [ width (px 30) ]
-                , src "/assets/github.png"
+                , src "assets/github.png"
                 ]
                 []
             ]
